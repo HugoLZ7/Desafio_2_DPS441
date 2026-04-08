@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Platform,
+  Alert,
 } from "react-native";
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -35,7 +35,6 @@ function CalendarioModal({ visible, fecha, onSelect, onClose }) {
   const celdas = Array(primerDia).fill(null).concat(
     Array.from({ length: diasEnMes }, (_, i) => i + 1)
   );
-  // Rellenar hasta múltiplo de 7
   while (celdas.length % 7 !== 0) celdas.push(null);
 
   const esSelecc = (d) =>
@@ -53,7 +52,6 @@ function CalendarioModal({ visible, fecha, onSelect, onClose }) {
     <Modal visible={visible} transparent animationType="fade">
       <TouchableOpacity style={cal.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} style={cal.card}>
-          {/* Cabecera mes */}
           <View style={cal.navRow}>
             <TouchableOpacity onPress={() => cambiarMes(-1)} style={cal.navBtn}>
               <Text style={cal.navArrow}>‹</Text>
@@ -66,14 +64,12 @@ function CalendarioModal({ visible, fecha, onSelect, onClose }) {
             </TouchableOpacity>
           </View>
 
-          {/* Días de semana */}
           <View style={cal.weekRow}>
             {DAYS.map((d) => (
               <Text key={d} style={cal.weekDay}>{d}</Text>
             ))}
           </View>
 
-          {/* Celdas */}
           <View style={cal.grid}>
             {celdas.map((d, i) => (
               <TouchableOpacity
@@ -100,7 +96,6 @@ function CalendarioModal({ visible, fecha, onSelect, onClose }) {
             ))}
           </View>
 
-          {/* Botón hoy */}
           <TouchableOpacity
             style={cal.todayBtn}
             onPress={() => {
@@ -125,12 +120,38 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
   const [fecha, setFecha] = useState(null);
   const [calVisible, setCalVisible] = useState(false);
 
+  // Función para resetear el formulario
+  const limpiarFormulario = () => {
+    setNombre("");
+    setMarca("");
+    setSerie("");
+    setPrecio("");
+    setFecha(null);
+  };
+
   const handleSave = () => {
-    const fechaStr = fecha
-      ? fecha.toISOString().split("T")[0]
-      : "";
+    // Validación de campos obligatorios
+    if (!nombre.trim() || !marca.trim() || !fecha) {
+      Alert.alert(
+        "Campos incompletos",
+        "Por favor completa la pieza, la marca y la fecha para continuar.",
+        [{ text: "Entendido" }]
+      );
+      return;
+    }
+
+    const fechaStr = fecha ? fecha.toISOString().split("T")[0] : "";
+    
+    // Enviamos los datos
     onSave({ nombre, marca, serie, precio, fecha: fechaStr });
-    setNombre(""); setMarca(""); setSerie(""); setPrecio(""); setFecha(null);
+    
+    // Limpiamos inmediatamente ya que no hay opción de "Revisar"
+    limpiarFormulario();
+  };
+
+  const handleCancel = () => {
+    limpiarFormulario();
+    onCancel();
   };
 
   const formatFecha = (d) => {
@@ -149,9 +170,8 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
     <Modal visible={visible} animationType="slide">
       <View style={[styles.root, { paddingTop: insets.top }]}>
 
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onCancel} style={styles.closeBtn}>
+          <TouchableOpacity onPress={handleCancel} style={styles.closeBtn}>
             <Text style={styles.closeIcon}>✕</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Nueva pieza</Text>
@@ -163,12 +183,10 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Pill decorativo */}
           <View style={styles.pill}>
             <Text style={styles.pillText}>Completa los campos</Text>
           </View>
 
-          {/* Campos de texto */}
           {fields.map(({ label, value, setter, placeholder, keyboardType }) => (
             <View key={label} style={styles.fieldBlock}>
               <Text style={styles.label}>{label}</Text>
@@ -183,7 +201,6 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
             </View>
           ))}
 
-          {/* Selector de fecha */}
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Fecha</Text>
             <TouchableOpacity
@@ -198,14 +215,16 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
             </TouchableOpacity>
           </View>
 
-          {/* Botón guardar */}
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={styles.saveBtn} 
+            onPress={handleSave} 
+            activeOpacity={0.85}
+          >
             <Text style={styles.saveBtnText}>Guardar pieza</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* Calendario */}
       <CalendarioModal
         visible={calVisible}
         fecha={fecha}
@@ -216,12 +235,8 @@ export default function ModalRegistro({ visible, onSave, onCancel, insets }) {
   );
 }
 
-/* ─── Estilos del modal principal ─── */
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#f4f5f7",
-  },
+  root: { flex: 1, backgroundColor: "#f4f5f7" },
   header: {
     backgroundColor: "#1a1a2e",
     flexDirection: "row",
@@ -232,12 +247,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.3,
-  },
+  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
   closeBtn: {
     width: 36,
     height: 36,
@@ -246,15 +256,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  closeIcon: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  form: {
-    padding: 24,
-    paddingBottom: 48,
-  },
+  closeIcon: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  form: { padding: 24, paddingBottom: 48 },
   pill: {
     alignSelf: "flex-start",
     backgroundColor: "#ebe9ff",
@@ -263,15 +266,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 28,
   },
-  pillText: {
-    color: "#4f46e5",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.4,
-  },
-  fieldBlock: {
-    marginBottom: 20,
-  },
+  pillText: { color: "#4f46e5", fontSize: 12, fontWeight: "600", letterSpacing: 0.4 },
+  fieldBlock: { marginBottom: 20 },
   label: {
     fontSize: 12,
     fontWeight: "600",
@@ -290,23 +286,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e4e4f0",
   },
-  dateBtn: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dateText: {
-    fontSize: 15,
-    color: "#1a1a2e",
-    fontWeight: "500",
-  },
-  datePlaceholder: {
-    fontSize: 15,
-    color: "#9b9bc4",
-  },
-  calIcon: {
-    fontSize: 16,
-  },
+  dateBtn: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateText: { fontSize: 15, color: "#1a1a2e", fontWeight: "500" },
+  datePlaceholder: { fontSize: 15, color: "#9b9bc4" },
+  calIcon: { fontSize: 16 },
   saveBtn: {
     marginTop: 16,
     backgroundColor: "#4f46e5",
@@ -319,15 +302,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  saveBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
+  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
 });
 
-/* ─── Estilos del calendario ─── */
 const cal = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -336,19 +313,8 @@ const cal = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 20,
-    width: "100%",
-    maxWidth: 360,
-  },
-  navRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
+  card: { backgroundColor: "#fff", borderRadius: 24, padding: 20, width: "100%", maxWidth: 360 },
+  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   navBtn: {
     width: 36,
     height: 36,
@@ -357,68 +323,17 @@ const cal = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  navArrow: {
-    fontSize: 22,
-    color: "#4f46e5",
-    lineHeight: 26,
-  },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1a1a2e",
-    letterSpacing: -0.2,
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  weekDay: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#9b9bc4",
-    letterSpacing: 0.4,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  cell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  cellSelected: {
-    backgroundColor: "#4f46e5",
-  },
-  cellToday: {
-    backgroundColor: "#ebe9ff",
-  },
-  cellText: {
-    fontSize: 14,
-    color: "#1a1a2e",
-  },
-  cellTextSelected: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  cellTextToday: {
-    color: "#4f46e5",
-    fontWeight: "700",
-  },
-  todayBtn: {
-    marginTop: 16,
-    backgroundColor: "#f0efff",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  todayBtnText: {
-    color: "#4f46e5",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  navArrow: { fontSize: 22, color: "#4f46e5", lineHeight: 26 },
+  navTitle: { fontSize: 16, fontWeight: "700", color: "#1a1a2e", letterSpacing: -0.2 },
+  weekRow: { flexDirection: "row", marginBottom: 8 },
+  weekDay: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: "#9b9bc4", letterSpacing: 0.4 },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  cell: { width: `${100 / 7}%`, aspectRatio: 1, justifyContent: "center", alignItems: "center", borderRadius: 10 },
+  cellSelected: { backgroundColor: "#4f46e5" },
+  cellToday: { backgroundColor: "#ebe9ff" },
+  cellText: { fontSize: 14, color: "#1a1a2e" },
+  cellTextSelected: { color: "#fff", fontWeight: "700" },
+  cellTextToday: { color: "#4f46e5", fontWeight: "700" },
+  todayBtn: { marginTop: 16, backgroundColor: "#f0efff", borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  todayBtnText: { color: "#4f46e5", fontSize: 14, fontWeight: "700" },
 });
